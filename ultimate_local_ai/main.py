@@ -323,33 +323,36 @@ def pull(
     force: bool = typer.Option(False, "--force", "-f", help="Force re-download"),
 ) -> None:
     """Download and install a model."""
-    try:
-        asyncio.run(initialize_system())
-        
-        # Download model with progress
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            console=console
-        ) as progress:
+    async def _pull():
+        try:
+            await initialize_system()
             
-            download_task = progress.add_task(f"Downloading {model}...", total=None)
+            # Download model with progress
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                console=console
+            ) as progress:
+                
+                download_task = progress.add_task(f"Downloading {model}...", total=None)
+                
+                async def progress_callback(percent, status):
+                    progress.update(download_task, description=f"Downloading {model}: {status}")
+                
+                # Download the model
+                await controller.model_manager.download_model(model, force, progress_callback)
+                
+                progress.update(download_task, description=f"✅ {model} downloaded successfully")
             
-            async def progress_callback(percent, status):
-                progress.update(download_task, description=f"Downloading {model}: {status}")
+            console.print(f"[green]Model {model} is ready to use![/green]")
             
-            # Download the model
-            await controller.model_manager.download_model(model, force, progress_callback)
-            
-            progress.update(download_task, description=f"✅ {model} downloaded successfully")
-        
-        console.print(f"[green]Model {model} is ready to use![/green]")
-        
-    except Exception as e:
-        console.print(f"[red]Error downloading model: {e}[/red]")
-        sys.exit(1)
+        except Exception as e:
+            console.print(f"[red]Error downloading model: {e}[/red]")
+            sys.exit(1)
+    
+    asyncio.run(_pull())
 
 
 @app.command()
