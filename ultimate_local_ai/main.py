@@ -364,43 +364,46 @@ def reasoning(
     save_pattern: bool = typer.Option(True, "--save-pattern/--no-save-pattern", help="Save successful patterns"),
 ) -> None:
     """Solve a problem using advanced reasoning capabilities."""
-    try:
-        asyncio.run(initialize_system())
-        
-        # Use reasoning-focused settings
-        settings = {
-            "enable_reasoning": True,
-            "thinking_mode": True,
-            "enable_rag": True,
-            "enable_memory": True,
-            "temperature": 0.7,
-            "verbose": True
-        }
-        
-        # Process with reasoning
-        with Live(interface.create_thinking_indicator(), refresh_per_second=4) as live:
-            result = await controller.process_query(
-                query=problem,
-                context={"reasoning_method": method},
-                user_preferences=settings
-            )
+    async def _reasoning():
+        try:
+            await initialize_system()
             
-            live.update(interface.create_reasoning_display(result))
-            await asyncio.sleep(1)
-        
-        # Display results
-        interface.display_reasoning_result(result, show_steps, show_confidence)
-        
-        # Save pattern if successful
-        if save_pattern and result.confidence > 0.8:
-            await controller.reasoning_engine.learn_pattern(
-                problem, result.thinking_process, result.confidence
-            )
-            console.print("[green]✅ Reasoning pattern saved for future use[/green]")
-        
-    except Exception as e:
-        console.print(f"[red]Error in reasoning: {e}[/red]")
-        sys.exit(1)
+            # Use reasoning-focused settings
+            settings = {
+                "enable_reasoning": True,
+                "thinking_mode": True,
+                "enable_rag": True,
+                "enable_memory": True,
+                "temperature": 0.7,
+                "verbose": True
+            }
+            
+            # Process with reasoning
+            with Live(interface.create_thinking_indicator(), refresh_per_second=4) as live:
+                result = await controller.process_query(
+                    query=problem,
+                    context={"reasoning_method": method},
+                    user_preferences=settings
+                )
+                
+                live.update(interface.create_reasoning_display(result))
+                await asyncio.sleep(1)
+            
+            # Display results
+            interface.display_reasoning_result(result, show_steps, show_confidence)
+            
+            # Save pattern if successful
+            if save_pattern and result.confidence > 0.8:
+                await controller.reasoning_engine.learn_pattern(
+                    problem, result.thinking_process, result.confidence
+                )
+                console.print("[green]✅ Reasoning pattern saved for future use[/green]")
+            
+        except Exception as e:
+            console.print(f"[red]Error in reasoning: {e}[/red]")
+            sys.exit(1)
+    
+    asyncio.run(_reasoning())
 
 
 @app.command()
