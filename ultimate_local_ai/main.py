@@ -413,21 +413,23 @@ def memory(
     limit: int = typer.Option(10, "--limit", "-l", help="Number of results"),
 ) -> None:
     """Manage memory system."""
-    try:
-        asyncio.run(initialize_system())
-        
-        if action == "stats":
-            await show_memory_stats()
-        elif action == "search" and query:
-            await search_memory(query, limit)
-        elif action == "clear":
-            await clear_memory()
-        else:
-            console.print("[red]Invalid action or missing query[/red]")
+    async def _memory():
+        try:
+            await initialize_system()
             
-    except Exception as e:
-        console.print(f"[red]Error managing memory: {e}[/red]")
-        sys.exit(1)
+            if action == "stats":
+                await show_memory_stats()
+            elif action == "search" and query:
+                await search_memory(query, limit)
+            elif action == "clear":
+                await clear_memory()
+            else:
+                console.print("[red]Invalid action or missing query[/red]")
+                
+        except Exception as e:
+            console.print(f"[red]Error managing memory: {e}[/red]")
+    
+    asyncio.run(_memory())
 
 
 @app.command()
