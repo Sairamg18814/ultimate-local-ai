@@ -18,6 +18,7 @@ from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing import Optional
 import requests
+from beyond_rag import create_rag_enhanced_prompt, BeyondRAG
 
 app = typer.Typer(
     name="ultimate-ai",
@@ -39,18 +40,23 @@ def check_ollama():
     except:
         return False, []
 
-def chat_with_ai(message: str, model: str = "qwen3:32b", system_prompt: str = None):
-    """Chat with AI using optimized streaming"""
+def chat_with_ai(message: str, model: str = "qwen3:32b", system_prompt: str = None, use_rag: bool = True):
+    """Chat with AI using optimized streaming and Beyond RAG"""
     
-    if not system_prompt:
-        system_prompt = """You are Ultimate Local AI, an advanced AI assistant created in 2024. You are knowledgeable, helpful, and conversational. 
+    # Use Beyond RAG to enhance the query with current information
+    if use_rag and not system_prompt:
+        augmented_message, rag_system_prompt = create_rag_enhanced_prompt(message)
+        system_prompt = rag_system_prompt
+        message = augmented_message
+    elif not system_prompt:
+        system_prompt = """You are Ultimate Local AI, an advanced AI assistant. You are knowledgeable, helpful, and conversational.
 
 Key guidelines:
 - Provide accurate, up-to-date information
 - Be concise but comprehensive  
 - Use natural, flowing language
 - Focus on practical, actionable advice
-- Stay current with 2024 technology trends
+- Stay current with technology trends
 
 Respond naturally without internal thinking or meta-commentary."""
 
@@ -65,7 +71,8 @@ Respond naturally without internal thinking or meta-commentary."""
             "options": {
                 "temperature": 0.7,
                 "top_p": 0.9,
-                "num_predict": 2048
+                "num_predict": 2048,
+                "stop": ["<|im_end|>", "<|im_start|>"]
             }
         }
         
@@ -73,7 +80,6 @@ Respond naturally without internal thinking or meta-commentary."""
         
         if response.status_code == 200:
             full_response = ""
-            word_buffer = ""
             
             for line in response.iter_lines():
                 if line:
@@ -82,21 +88,15 @@ Respond naturally without internal thinking or meta-commentary."""
                         if "message" in data and "content" in data["message"]:
                             chunk = data["message"]["content"]
                             
-                            # Filter out thinking tokens
-                            if any(token in chunk.lower() for token in ["<think>", "</think>", "think about"]):
+                            # Basic filtering of thinking tokens
+                            if "<think>" in chunk or "</think>" in chunk:
                                 continue
                             
                             full_response += chunk
-                            word_buffer += chunk
-                            
-                            # Output complete words or phrases
-                            if any(char in word_buffer for char in [" ", "\n", ".", "!", "?"]):
-                                print(word_buffer, end="", flush=True)
-                                word_buffer = ""
+                            # Print each chunk immediately as it arrives
+                            print(chunk, end="", flush=True)
                         
                         if data.get("done", False):
-                            if word_buffer:
-                                print(word_buffer, end="", flush=True)
                             break
                             
                     except json.JSONDecodeError:
@@ -141,7 +141,11 @@ def chat(
             console.print(f"[yellow]Available: {', '.join(available_models)}[/yellow]")
         return
     
-    console.print(f"[green]✅ Using {model}[/green]\n")
+    # Show Beyond RAG status
+    rag = BeyondRAG()
+    current_info = rag.get_current_info()
+    console.print(f"[green]✅ Using {model}[/green]")
+    console.print(f"[cyan]📅 Beyond RAG Active - {current_info['date']}[/cyan]\n")
     
     if interactive or not message:
         # Interactive mode
@@ -269,10 +273,15 @@ def info() -> None:
     ollama_status = "✅ Running" if ollama_running else "❌ Offline"
     model_count = f"✅ {len(models)} models" if models else "⚠️ No models"
     
+    # Get Beyond RAG status
+    rag = BeyondRAG()
+    current_info = rag.get_current_info()
+    
     table.add_row("🤖 Ollama Service", ollama_status, f"API: {OLLAMA_BASE_URL}")
     table.add_row("📋 AI Models", model_count, f"{', '.join(models[:3])}...")
     table.add_row("🧠 Reasoning", "✅ Active", "Advanced problem solving")
     table.add_row("💬 Chat", "✅ Active", "Interactive conversations")
+    table.add_row("🌐 Beyond RAG", "✅ Active", f"Current: {current_info['date']}")
     table.add_row("🔒 Privacy", "✅ Maximum", "100% local processing")
     table.add_row("⚡ Performance", "✅ Optimized", "Streaming responses")
     
