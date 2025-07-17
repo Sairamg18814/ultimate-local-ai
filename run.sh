@@ -25,10 +25,10 @@ source venv/bin/activate
 if [ $# -eq 0 ]; then
     # No arguments, show menu
     echo -e "${CYAN}🎯 Quick Commands:${NC}"
-    echo "  1. Real AI Chat (Complete CLI)"
-    echo "  2. Simple Demo Chat"
-    echo "  3. Real AI Reasoning"
-    echo "  4. Interactive AI Chat"
+    echo "  1. Ultimate AI Chat (Best)"
+    echo "  2. Interactive AI Chat"
+    echo "  3. AI Reasoning Engine"
+    echo "  4. Simple Demo"
     echo "  5. System Info"
     echo "  6. View AI Models"
     echo ""
@@ -37,41 +37,46 @@ if [ $# -eq 0 ]; then
     case $choice in
         1)
             read -p "Enter your question: " question
-            echo -e "${GREEN}Using real AI...${NC}"
-            python complete_cli.py chat "$question"
+            echo -e "${GREEN}Using Ultimate AI...${NC}"
+            python ultimate_cli.py chat "$question"
             ;;
         2)
-            echo -e "${GREEN}Starting simple demo chat...${NC}"
-            python simple_cli.py chat --interactive
+            echo -e "${GREEN}Starting interactive AI chat...${NC}"
+            python ultimate_cli.py chat --interactive
             ;;
         3)
             read -p "Enter a problem to solve: " problem
-            echo -e "${GREEN}Using advanced AI reasoning...${NC}"
-            python complete_cli.py reasoning "$problem"
+            echo -e "${GREEN}Using AI reasoning engine...${NC}"
+            python ultimate_cli.py reasoning "$problem"
             ;;
         4)
-            echo -e "${GREEN}Starting real AI interactive chat...${NC}"
-            python complete_cli.py chat --interactive
+            echo -e "${GREEN}Starting simple demo...${NC}"
+            python simple_cli.py chat --interactive
             ;;
         5)
-            python complete_cli.py info
+            python ultimate_cli.py info
             ;;
         6)
-            python complete_cli.py models
+            python ultimate_cli.py models
             ;;
         *)
-            echo "Invalid option. Starting real AI chat..."
-            python complete_cli.py chat --interactive
+            echo "Invalid option. Starting Ultimate AI chat..."
+            python ultimate_cli.py chat --interactive
             ;;
     esac
 else
     # Arguments passed, determine which CLI to use
-    if [ "$1" = "complete" ]; then
-        shift  # Remove 'complete' from arguments
-        echo -e "${GREEN}Running complete CLI: python complete_cli.py $@${NC}"
-        python complete_cli.py "$@"
-    else
-        echo -e "${GREEN}Running simple CLI: python simple_cli.py $@${NC}"
+    if [ "$1" = "ultimate" ]; then
+        shift  # Remove 'ultimate' from arguments
+        echo -e "${GREEN}Running Ultimate AI: python ultimate_cli.py $@${NC}"
+        python ultimate_cli.py "$@"
+    elif [ "$1" = "simple" ]; then
+        shift  # Remove 'simple' from arguments
+        echo -e "${GREEN}Running simple demo: python simple_cli.py $@${NC}"
         python simple_cli.py "$@"
+    else
+        # Default to Ultimate AI
+        echo -e "${GREEN}Running Ultimate AI: python ultimate_cli.py $@${NC}"
+        python ultimate_cli.py "$@"
     fi
 fi

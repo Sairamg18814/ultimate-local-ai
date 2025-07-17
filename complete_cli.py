@@ -57,17 +57,33 @@ def chat_with_ollama(message: str, model: str = "qwen3:32b", system: str = None)
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": system or "You are Ultimate Local AI, an advanced AI assistant running locally with focus on privacy and intelligence."},
+                {"role": "system", "content": system or "You are Ultimate Local AI, a highly advanced AI assistant created in 2024. You are knowledgeable about current events, technology, programming, science, and provide helpful, accurate, and up-to-date responses. Be natural, conversational, and concise."},
                 {"role": "user", "content": message}
             ],
-            "stream": False
+            "stream": False,
+            "options": {
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "stop": ["<think>", "</think>"]
+            }
         }
         
         response = requests.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload, timeout=120)
         
         if response.status_code == 200:
             data = response.json()
-            return data["message"]["content"]
+            content = data["message"]["content"]
+            # Remove any thinking tokens that might appear
+            content = content.replace("<think>", "").replace("</think>", "")
+            # Remove excessive thinking content
+            if content.startswith("Think"):
+                lines = content.split("\n")
+                # Find first substantial response line
+                for i, line in enumerate(lines):
+                    if line and not line.lower().startswith(("think", "okay", "hmm", "let me")):
+                        content = "\n".join(lines[i:])
+                        break
+            return content.strip()
         else:
             return f"Error: {response.status_code} - {response.text}"
     except Exception as e:
@@ -79,25 +95,45 @@ def stream_chat_with_ollama(message: str, model: str = "qwen3:32b", system: str 
         payload = {
             "model": model,
             "messages": [
-                {"role": "system", "content": system or "You are Ultimate Local AI, an advanced AI assistant."},
+                {"role": "system", "content": system or "You are Ultimate Local AI, a highly advanced AI assistant created in 2024. You are knowledgeable about current events, technology, and provide helpful, accurate responses. Be concise and natural in your responses."},
                 {"role": "user", "content": message}
             ],
-            "stream": True
+            "stream": True,
+            "options": {
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "stop": ["<think>", "</think>"]  # Stop thinking tokens from appearing
+            }
         }
         
         response = requests.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload, stream=True, timeout=60)
         
         if response.status_code == 200:
             full_response = ""
+            buffer = ""
+            
             for line in response.iter_lines():
                 if line:
                     try:
                         data = json.loads(line)
                         if "message" in data and "content" in data["message"]:
                             content = data["message"]["content"]
+                            
+                            # Skip thinking tokens
+                            if "<think>" in content or "</think>" in content:
+                                continue
+                                
+                            buffer += content
                             full_response += content
-                            yield content
+                            
+                            # Yield when we have complete words
+                            if " " in buffer or "\n" in buffer or len(buffer) > 10:
+                                yield buffer
+                                buffer = ""
+                                
                         if data.get("done", False):
+                            if buffer:  # Yield any remaining content
+                                yield buffer
                             break
                     except json.JSONDecodeError:
                         continue
@@ -161,7 +197,7 @@ def chat(
         console.print()
         
         conversation_history = []
-        current_system = system or "You are Ultimate Local AI, an advanced AI assistant running locally with focus on privacy, intelligence, and helpful responses."
+        current_system = system or "You are Ultimate Local AI, a highly advanced AI assistant created in 2024. You have knowledge of recent events, technology trends, programming languages, and scientific developments. Provide helpful, accurate, and current responses. Be conversational and natural."
         
         while True:
             try:
@@ -254,20 +290,21 @@ def reasoning(
     console.print(f"\n[bold yellow]Problem:[/bold yellow] {problem}\n")
     
     # Advanced reasoning system prompt
-    reasoning_system = """You are an advanced reasoning AI assistant. When solving problems:
+    reasoning_system = """You are Ultimate Local AI's advanced reasoning engine, created in 2024. When solving problems, think systematically and provide practical solutions.
 
-1. **Analysis**: Break down the problem into components
-2. **Reasoning**: Apply step-by-step logical thinking  
-3. **Solution**: Provide a clear, actionable solution
-4. **Confidence**: Indicate your confidence level (0-100%)
+Format your response as:
+🔍 **Analysis**: Break down the problem clearly
+🧠 **Reasoning**: Apply logical, step-by-step thinking
+💡 **Solution**: Provide actionable, specific solutions
+✅ **Confidence**: Rate your confidence (0-100%)
 
-Use this format:
-🔍 **Analysis**: [Your analysis]
-🧠 **Reasoning**: [Step-by-step reasoning]
-💡 **Solution**: [Clear solution]
-✅ **Confidence**: [0-100%]
+Focus on:
+- Current best practices (2024)
+- Practical implementation
+- Real-world considerations
+- Modern tools and techniques
 
-Be thorough, logical, and practical."""
+Be thorough but concise. Avoid excessive philosophical pondering."""
     
     if show_steps:
         # Show thinking process
