@@ -1,6 +1,6 @@
 # Ultimate Local AI CLI
 
-A cutting-edge local AI assistant that combines **Qwen3-32B's adaptive intelligence** with **real-time RAG**, **advanced reasoning**, and **continuous learning** to create an AI that truly understands your world and gets smarter every day.
+A cutting-edge local AI assistant with **Beyond RAG real-time information**, **natural streaming responses**, and **advanced reasoning** - running 100% locally with complete privacy.
 
 ## 🚀 Features
 
@@ -69,12 +69,13 @@ ollama serve
 
 ### 4. Download Models
 ```bash
-# Primary reasoning model (recommended)
-ollama pull qwen3:32b
+# Recommended models for best experience
+ollama pull llama3.1:8b        # Clean, natural responses (recommended)
+ollama pull qwen3:32b           # Advanced reasoning (may show thinking)
 
 # Alternative models
-ollama pull qwen2.5-coder:32b  # For coding tasks
-ollama pull llava-next:32b     # For vision tasks
+ollama pull qwen2.5:14b         # Balanced performance
+ollama pull qwen2.5:7b          # Faster responses
 ```
 
 ### 5. Initialize System

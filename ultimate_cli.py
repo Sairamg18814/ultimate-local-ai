@@ -40,7 +40,7 @@ def check_ollama():
     except:
         return False, []
 
-def chat_with_ai(message: str, model: str = "qwen3:32b", system_prompt: str = None, use_rag: bool = True):
+def chat_with_ai(message: str, model: str = "llama3.1:8b", system_prompt: str = None, use_rag: bool = True):
     """Chat with AI using optimized streaming and Beyond RAG"""
     
     # Use Beyond RAG to enhance the query with current information
@@ -72,7 +72,9 @@ Respond naturally without internal thinking or meta-commentary."""
                 "temperature": 0.7,
                 "top_p": 0.9,
                 "num_predict": 2048,
-                "stop": ["<|im_end|>", "<|im_start|>"]
+                "stop": ["<|im_end|>", "<|im_start|>"],
+                "num_ctx": 4096,
+                "repeat_penalty": 1.1
             }
         }
         
@@ -87,13 +89,8 @@ Respond naturally without internal thinking or meta-commentary."""
                         data = json.loads(line)
                         if "message" in data and "content" in data["message"]:
                             chunk = data["message"]["content"]
-                            
-                            # Basic filtering of thinking tokens
-                            if "<think>" in chunk or "</think>" in chunk:
-                                continue
-                            
                             full_response += chunk
-                            # Print each chunk immediately as it arrives
+                            # Print each chunk immediately
                             print(chunk, end="", flush=True)
                         
                         if data.get("done", False):
@@ -114,7 +111,7 @@ Respond naturally without internal thinking or meta-commentary."""
 def chat(
     message: Optional[str] = typer.Argument(None, help="Message to send"),
     interactive: bool = typer.Option(False, "--interactive", "-i", help="Interactive mode"),
-    model: str = typer.Option("qwen3:32b", "--model", "-m", help="AI model to use"),
+    model: str = typer.Option("llama3.1:8b", "--model", "-m", help="AI model to use"),
 ) -> None:
     """
     Chat with Ultimate Local AI
@@ -211,7 +208,7 @@ def chat(
 @app.command()
 def reasoning(
     problem: str = typer.Argument(..., help="Problem to solve"),
-    model: str = typer.Option("qwen3:32b", "--model", "-m", help="Model to use"),
+    model: str = typer.Option("llama3.1:8b", "--model", "-m", help="Model to use"),
 ) -> None:
     """Advanced problem solving and reasoning"""
     

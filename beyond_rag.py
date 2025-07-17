@@ -132,7 +132,7 @@ Key capabilities:
 
 Always use the current information provided when answering questions about dates, times, or current events.
 
-IMPORTANT: Respond directly to the user's question without any internal thinking or meta-commentary. Do not explain your reasoning process."""
+CRITICAL INSTRUCTION: You must respond ONLY with the direct answer to the user's question. Do not include ANY internal thoughts, reasoning, or meta-commentary. Start your response immediately with the answer."""
     else:
         system_prompt = """You are Ultimate Local AI, an advanced AI assistant with extensive knowledge. Provide helpful, accurate, and detailed responses."""
     
